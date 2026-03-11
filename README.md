@@ -2,7 +2,7 @@
 
 Repositorio de la asignatura Redes de Computadoras
 
-Gastón E. Capdevila
-Igancio Ledesma
-Nicolas Seia
-Tomas Viberti
+- Gastón E. Capdevila
+- Igancio Ledesma
+- Nicolas Seia
+- Tomas Viberti

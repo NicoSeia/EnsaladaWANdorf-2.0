@@ -15,7 +15,7 @@
 - SANTIAGO MARTIN HENN
 - OLIVA CUNEO FACUNDO NICOLAS 
 
-**156/3/2026**   
+**16/3/2026**   
 
 ---
 
@@ -25,4 +25,25 @@
 - nicolas.seia@unc.edu.ar
 - iledesma@mi.unc.edu.ar
 - tomas.viberti@mi.unc.edu.ar
+
+## Resumen
+
+
+
+*Palabras clave*: 
+
+## Introducción
+
+
+## Desarrollo 
+
+### 1)
+
+Para comenzar con el trabajo, fue necesario realizar la topografía de la red que íbamos a simular; para ello, entre todos los grupos fuimos armando su topología. Se planteó el problema de tener tres routers, los cuales son los nodos centrales encargados de reenviar los paquetes a su destino correcto. Por otro lado, definimos hosts que estaban comunicados únicamente con alguno de los routers centrales.
+
+A continuación, detallo la red:
+
+![Red topografica](red.png)
+
+### 2)
 

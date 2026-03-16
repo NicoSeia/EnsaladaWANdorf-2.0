@@ -109,11 +109,40 @@ Detallo capturas del proceso:
 
 ![RecDU](paqueteRecibido.jpeg)
 
-![RecCorrect](paqueteRecibido2.jpeg)
+![RecCorrect](pauqeteRecibido2.jpeg)
 
 ![PaquetesLost](paquetesSinTerminar.jpeg)
 
 ### 5)
 
+**a)** 
 
+Podemos decir que el "direccionamiento lógico" (IP), se mantiene constante ya que identifica el punto final de la comunicación a nivel global, la cual se lo conoce como capa 3. En cambio el "direccionamiento físico" es un identificador local (capa 2), que tiene como funcionalidad de mover el paquete entre nodo y nodo dentro de un mismo enlace físico.
 
+**b)** 
+
+Un host solo puede descubrir direcciones MAC de dispositivos que están en su propia red local. No buscan descubrir la MAC de destino final porque, como comentamos anteriormente, va de salto en salto entre los nodos de un mismo enlace. 
+
+El problema que se resuelve, es que el host "no sabe" como llegar a redes externas; solo sabe que si el destino no es local, debe pasarle el paquete al default gateway. Este actua como puente que tiene la capacidad de analizar la IP destino y decidir hacia que ruta externa debe encaminar el paquete.
+
+**c)** 
+
+Este modelo, hop-by-hop, es fundamental por diferentes razones como:
+
+- Eficiencia de memoria: Ningun router necesita conocer el mapa completo de internet, solo necesita saber su vecino.
+- Flexibilidad: Si un enlace falla, los routers actualizan sus tablas locales para desviar el trafico sin que el origen tenga que realizar una reconfiguracion.
+- Simplicidad: Reduce la carga de sobreprocesamiento.
+
+**d)** 
+
+El desencapsulado y re-encapsulado es necesario porque el "Frame Ethernet" tiene validez solo en el enlace fisico actual. Quiere decir que al llegar a un router, ese frame "muere" ya que cumplió su función de llevar el paquete al router. Luego debe crear un nuevo frame y pasarselo al siguente nodo.
+
+Si no se hiciera, se generaria un bucle o que el siguiente dispositivo ignore el paquete porque la MAC de destino seguira siendo la del propio router que lo recibió.
+
+**e)** 
+
+Time to Live (TTL) previene que los paquetes circulen infinitamente en la red en case de que existan bucles de ruteo. 
+
+Si hubiera un error en las tablas y entre dos routers se envian el paquete constantemente, la red se saturaria muy rapido, generando colapsos en la infraestructura. Para asegurarse de que no suceda aparece TTL, que tras N saltos, el paquete se descarte y se liberen recursos.
+
+### 2)

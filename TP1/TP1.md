@@ -39,7 +39,7 @@
 
 Para comenzar con el trabajo, fue necesario realizar la topografía de la red que íbamos a simular; para ello, entre todos los grupos fuimos armando su topología. Se planteó el problema de tener tres routers, los cuales son los nodos centrales encargados de reenviar los paquetes a su destino correcto. Por otro lado, definimos hosts que estaban comunicados únicamente con alguno de los routers centrales.
 
-A continuación, detallo la red:
+A continuación, se detalla la red:
 
 ![Red topologica](red.png)
 
@@ -57,7 +57,7 @@ En esta fase, cada integrante configura su **NIC (Network Interface Card)**. Hem
 | **Host 3** | Host-Gaston | 43365894 | **10.4.0.103** | 255.255.255.0 | 10.4.0.1 | **AD:43:89** |
 | **Host 4** | Host-Nicolas | 43366980 | **10.4.0.104** | 255.255.255.0 | 10.4.0.1 | **AD:43:98** |
 
-> **Nota:** Se utiliza una máscara de subred `/24` (255.255.255.0) para permitir hasta 254 hosts dentro de la LAN `10.4.0.0`[cite: 1].
+> **Nota:** Se utiliza una máscara de subred `/24` (255.255.255.0) para permitir hasta 254 hosts dentro de la LAN `10.4.0.0`.
 
 ### 2) Armado de topología
 
@@ -91,30 +91,7 @@ Para interactuar con la WAN, el router gestiona hacia dónde enviar los paquetes
 
 ### 3) Conformación de paquetes
 
-La etapa de conformación de paquetes se llevó a cabo de la siguiente manera: en el Drive compartido de la cátedra, se creó una tabla vinculada a cada legajo con valores definidos aleatoriamente y sin repeticiones. Esto permitió que cada alumno pudiera crear su propio paquete encapsulado de forma única.
-
-#### Detalle de Encapsulamiento
-
-En esta fase, trabajamos en conjunto con el grupo "The Lords of Pings" para realizar la actividad. A continuación, utilizaremos como ejemplo el paquete empleado para dicha actividad compartida:
-
-**Frame Ethernet**
-| Campo | Valor |
-| :--- | :--- |
-| MAC Destino | `AC:44:52` |
-| MAC Origen | `AD:43:98` |
-
-**Paquete IP**
-| Campo | Valor |
-| :--- | :--- |
-| IP Origen | `10.5.0.104` |
-| IP Destino | `10.9.0.104` |
-| TTL | `6` |
-| Payload | `0001 1110 0000 1011` |
-| CRC |  |
-
-### 3) Conformación de paquetes
-
-Para esta actividad, se configuró un paquete de red que permita la comunicación desde nuestra subred local (**EnsaladaWANdorf-2.0**) hacia un host externo de la red vecina.
+Para esta actividad, se configuró un paquete de red que permita la comunicación desde nuestra subred local (**EnsaladaWANdorf-2.0**) hacia un host externo de la red vecina del grupo "The Lords of Pings".
 
 #### Datos de Origen (Nicolas)
 
@@ -148,7 +125,7 @@ A continuación, se detalla cómo queda conformado el frame para ser enviado al 
 
 #### Ejemplo del recorrido (Nicolas $\rightarrow$ Enzo)
 
-La IP es "extremo a extremo" (end-to-end) y por eso no cambian nunca durante todo el viaje, en cambio la MAC es "salto a salto" (hop-by-hop), lo que quiere decir que va a ir cambiando a medida que el paquete se traslada por el red, porque el router se encarga de "encaminarlo" por la red atravesando diferentes nodos. Ambas direcciones fisicas (MAC de destino y origen) van a ir cambiando, el Frame Ethernet que se mostró anteriormente es el que figura al inicio del tráfico del paquete. 
+La IP es "extremo a extremo" (end-to-end) y por eso no cambian nunca durante todo el viaje, en cambio la MAC es "salto a salto" (hop-by-hop), lo que quiere decir que va a ir cambiando a medida que el paquete se traslada por la red, porque el router se encarga de "encaminarlo" por diferentes nodos. Ambas direcciones fisicas (MAC de destino y origen) van a ir cambiando, siendo el Frame Ethernet mostrado anteriormente el que está al inicio del tráfico del paquete. 
 
 | Tramo del viaje | MAC Origen | MAC Destino | ¿Qué sucede? |
 | :--- | :--- | :--- | :--- |

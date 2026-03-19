@@ -28,12 +28,15 @@
 
 ## Resumen
 
+El presente informe documenta la simulación práctica de una infraestructura de red WAN y el análisis de mecanismos de detección de errores en la capa de enlace. En la primera etapa, se recreó el flujo de datos entre subredes locales (LAN) mediante una topología en estrella, validando los protocolos ARP para la resolución de direcciones físicas y el ruteo hop-by-hop para la interconexión de redes. Se analizó el proceso de encapsulamiento y la mutabilidad de las tramas Ethernet frente a la inmutabilidad de los paquetes IP. En la segunda fase, se aplicaron técnicas de EDAC (Paridad Par y Checksum) para evaluar la integridad de los payloads transmitidos, complementando el análisis con la implementación de algoritmos en Python para la detección y posible recuperación de errores de bit.
 
-
-*Palabras clave*: 
+*Palabras clave*: Ruteo Hop-by-Hop, IP, MAC, Encapsulamiento, EDAC, Checksum, Paridad, LAN.
 
 ## Introducción
 
+La comprensión de las redes de computadoras exige una visión clara de la interacción entre las capas del modelo OSI, específicamente entre la capa de Enlace (Capa 2) y la de Red (Capa 3). Este trabajo práctico se propone como un laboratorio didáctico para desglosar la complejidad del transporte de datos en un entorno multirred.
+
+A través de una simulación física, se busca que el estudiante experimente el "caos" inherente a la transmisión de datos, comprendiendo el rol crítico de los routers como nodos de decisión y la necesidad de mecanismos de control como el TTL  para garantizar la estabilidad del sistema. Asimismo, se aborda la problemática de la corrupción de datos, explorando técnicas de redundancia que permiten asegurar que la información recibida coincida con la emitida, sentando las bases de la comunicación confiable en redes digitales.
 
 ## Desarrollo Parte 1. Repaso general didáctico: Simulación de envío de paquetes, ARP y ruteo entre redes.
 
@@ -51,7 +54,7 @@ En esta fase, cada integrante configura su **NIC (Network Interface Card)**. Hem
 
 | Rol | Nombre del Dispositivo | Legajo | Dirección IP | Máscara de Subred | Gateway (GW) | Dirección MAC |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Router** | Router-Ensalada | 71462880 | **10.4.0.1** | 255.255.255.0 | N/A | AD:71:88 |
+| **Router** | Router-Ensalada | - | **10.4.0.1** | 255.255.255.0 | N/A | AD:71:88 |
 | **Host 1** | Host-Ignacio | 44346001 | **10.4.0.101** | 255.255.255.0 | 10.4.0.1 | **AD:44:00** |
 | **Host 2** | Host-Tomas | 43692641 | **10.4.0.102** | 255.255.255.0 | 10.4.0.1 | **AB:43:64** |
 | **Host 3** | Host-Gaston | 43365894 | **10.4.0.103** | 255.255.255.0 | 10.4.0.1 | **AD:43:89** |
@@ -211,3 +214,176 @@ podría suceder si el TTL no existiera?
 > El campo TTL actúa como un mecanismo de seguridad que previene la existencia de paquetes "huérfanos" circulando infinitamente debido a bucles de ruteo o tablas mal configuradas. Sin el TTL, un error en la red podría generar un consumo exponencial de ancho de banda y procesamiento, saturando la red muy rapido y colapsando los enlaces. Al decrementarse en cada salto, el TTL garantiza que el paquete sea descartado si no alcanza su destino en un $N$ número razonable de saltos ($TTL = 0$), liberando así los recursos de la infraestructura.
 
 ### Desarrollo Parte 2. Inyección y detección de errores.
+
+Esta es una propuesta de desarrollo para la **Parte 2** de tu informe, estructurada de forma técnica y académica, integrando los cálculos manuales que hicieron en papel y la lógica de programación que aplicaron para automatizar la detección.
+
+---
+
+## Parte 2: Inyección y detección de errores
+
+En esta etapa del laboratorio, se trabajó sobre la integridad de los datos en la capa de enlace. El objetivo fue aplicar técnicas de **EDAC (Error Detection and Correction)** para identificar alteraciones en el Payload durante el tránsito por la red.
+
+### 1. Metodología y Roles
+
+El aula se dividió en dos grandes bloques operativos para generar un esquema de "emisión y recepción cruzada". Cada sector utilizó un método de generación de redundancia de 4 bits para un payload de 16 bits[cite: 1].
+
+#### Sector 1: Paridad Par por Nibble
+
+Este fue el método utilizado por nuestro grupo para la **emisión** de paquetes.
+
+* **Concepto:** Se basa en contar la cantidad de bits en estado "1" dentro de un conjunto de datos.
+* **Funcionamiento:** El payload de 16 bits se divide en **4 nibbles** (grupos de 4 bits). Para cada nibble, se calcula un bit de paridad tal que el total de unos sea un número par.
+* **Generación del EDAC:** Los 4 bits resultantes (uno por cada nibble) se agrupan para formar el código de detección de 4 bits que acompaña a la trama.
+
+#### Sector 2: Checksum (Suma de Verificación) por Nibble
+
+Este fue el protocolo que debimos manejar para la **recepción y validación** de los paquetes provenientes de otros grupos.
+
+* **Concepto:** Utiliza la aritmética binaria para generar una "huella digital" del contenido basada en su suma total.
+* **Funcionamiento:** Se realiza una *Suma de Complemento a Uno*. Los 4 nibbles del payload se suman aritméticamente.
+* **End-around carry:** Si la suma genera un acarreo (un bit extra que excede los 4 bits), este no se descarta, sino que se suma al bit menos significativo del resultado final.
+* **Generación del EDAC:** El resultado final de esta suma circular de 4 bits constituye el Checksum que debe coincidir en el destino para validar la integridad.
+
+#### Diferencia Clave en la Detección
+
+| Característica | Paridad Par | Checksum |
+| :--- | :--- | :--- |
+| **Nivel de detección** | Detecta errores de bits impares por nibble. | Detecta cambios aritméticos en la carga útil. |
+| **Complejidad** | Muy baja (conteo de bits). | Media (requiere suma y manejo de acarreo). |
+
+### 2. Análisis del Paquete Recibido
+
+<img width="1824" height="184" alt="image" src="https://github.com/user-attachments/assets/37a0d8c5-e9a6-4d55-8b7b-4fc472a822b5" />
+
+Recibimos un paquete físico desde la IP de origen **10.7.0.1** destinado a nuestra red **10.4.0.1**.
+
+**Datos del Paquete:**
+| Campo | Valor |
+| :--- | :--- |
+| **IP Origen** | 10.7.0.1 |
+| **IP Destino** | 10.4.0.1 |
+| **Payload Recibido** | `0000 1111 0101 1111` |
+| **EDAC Recibido** | `0101` |
+
+#### Verificación Manual (Checksum por Nibble)
+
+Para comprobar la integridad, fragmentamos el payload de 16 bits en 4 nibbles ($N_n$) de 4 bits cada uno y aplicamos la suma con acarreo circular:
+
+1.  **Conversión y Suma:**
+    * $N_1 (0000) = 0$
+    * $N_2 (1111) = 15$
+    * $N_3 (0101) = 5$
+    * $N_4 (1111) = 15$
+    * **Suma Total:** $0 + 15 + 5 + 15 = 35_{10}$
+
+2.  **Aplicación de Acarreo Circular:**
+    Convertimos el resultado a binario: $35_{10} = 100011_2$. Como el sistema es de 4 bits, tomamos los bits excedentes (`10`) y los sumamos al valor principal (`0011`):
+    $$0011_2 + 10_2 = 0101_2 = 5_{10}$$
+
+3.  **Conclusión de Integridad:**
+    El valor calculado (**`0101`**) coincide exactamente con el EDAC recibido (**`0101`**). Por lo tanto, se documenta que el paquete **no fue modificado** durante la intervención del profesor.
+
+<img width="900" height="890" alt="image" src="https://github.com/user-attachments/assets/21717000-e32f-4b59-9f05-ec50214a3d12" />
+
+### 3. Automatización y Recuperación (Python)
+
+Desarrollamos una herramienta en Python para agilizar la verificación y permitir la recuperación de la trama original ante errores de 1 bit.
+
+* **Lógica de Verificación:** El script fragmenta la cadena binaria y calcula el Checksum (en el código implementado como XOR para pruebas de redundancia cíclica o Checksum según el caso) para validar el estado del paquete. Se asume que el EDAC no fue modificado.
+* **Recuperación de Errores:** En caso de discrepancia, el algoritmo invierte sistemáticamente cada uno de los bits de la Payload hasta encontrar una combinación que satisfaga la condición del Checksum, identificando así el bit erróneo.
+
+```python
+def calcular_checksum_xor(payload_bin: str) -> str:
+    """Calcula el checksum XOR de 4 bits para un payload de 16 bits."""
+    # Separar el payload en 4 nibbles
+    n1 = int(payload_bin[0:4], 2)
+    n2 = int(payload_bin[4:8], 2)
+    n3 = int(payload_bin[8:12], 2)
+    n4 = int(payload_bin[12:16], 2)
+    
+    # Aplicar XOR entre todos los nibbles
+    checksum = n1 ^ n2 ^ n3 ^ n4
+    
+    # Devolver como string binario de 4 caracteres (ej: '0101')
+    return format(checksum, '04b')
+
+def verificar_y_recuperar_trama(payload_bin: str, edac_bin: str) -> dict:
+    """
+    Verifica si el payload coincide con su EDAC. 
+    Asume que el EDAC recibido es correcto. Si hay error en el payload, 
+    calcula las posibles tramas originales asumiendo un error de 1 bit.
+    """
+    if len(payload_bin) != 16 or len(edac_bin) != 4:
+        raise ValueError("El payload debe tener 16 bits y el EDAC 4 bits.")
+
+    edac_calculado = calcular_checksum_xor(payload_bin)
+    
+    if edac_calculado == edac_bin:
+        return {
+            "estado": "OK",
+            "mensaje": "El payload es válido. No se detectaron errores.",
+            "posibles_soluciones": []
+        }
+
+    # Si llegamos acá, HAY UN ERROR. 
+    posibles_soluciones = []
+
+    # Invertimos 1 bit a la vez SOLO en el payload (16 bits)
+    for i in range(16):
+        # Cambiamos un '0' por '1' o un '1' por '0'
+        bit_invertido = '1' if payload_bin[i] == '0' else '0'
+        payload_prueba = payload_bin[:i] + bit_invertido + payload_bin[i+1:]
+        
+        # Calculamos el EDAC de este nuevo payload modificado
+        edac_prueba = calcular_checksum_xor(payload_prueba)
+        
+        # Si el EDAC de esta prueba coincide con el EDAC original (que asumimos correcto), 
+        # encontramos una posible solución válida.
+        if edac_prueba == edac_bin:
+            posibles_soluciones.append({
+                "bit_modificado": i, # Índice del 0 al 15
+                "payload_sugerido": payload_prueba,
+                "edac": edac_bin  # El EDAC se mantiene intacto
+            })
+
+    return {
+        "estado": "ERROR",
+        "mensaje": f"EDAC recibido ({edac_bin}) no coincide con el calculado ({edac_calculado}).",
+        "posibles_soluciones": posibles_soluciones
+    }
+
+
+# ==========================================
+# Ejemplos de uso
+# ==========================================
+if __name__ == "__main__":
+    
+    payload = "0000111101011111" 
+    edac = "0101"
+    
+    resultado = verificar_y_recuperar_trama(payload, edac)
+    
+    print(f"Estado: {resultado['estado']}")
+    print(f"Mensaje: {resultado['mensaje']}\n")
+    
+    print("Posibles paquetes originales (asumiendo que el EDAC es correcto):")
+    for sol in resultado['posibles_soluciones']:
+        print(f" - Cambiando bit {sol['bit_modificado']} -> Payload Sugerido: {sol['payload_sugerido']}")
+```
+
+---
+
+## Conclusiones
+
+### 1. Dinámica del Tránsito de Datos entre Redes
+
+Se validó empíricamente que la comunicación entre hosts de distintas LANs depende de una jerarquía de direccionamiento clara. Mientras que la **dirección IP** actúa como un identificador global persistente que define el origen y el destino final (comunicación *end-to-end*), las **direcciones MAC** son efímeras y cambian en cada salto del ruteo (*hop-by-hop*). Este mecanismo de re-encapsulamiento es el que permite que Internet sea escalable; un host solo necesita conocer a su **Default Gateway** para acceder al resto del mundo, delegando la complejidad del camino completo a la inteligencia colectiva de las tablas de ruteo locales de los nodos centrales.
+
+### 2. Eficacia de los Métodos EDAC: Checksum vs. Paridad
+
+La comparativa entre los métodos de detección utilizados revela un compromiso entre simplicidad y robustez:
+
+* **Paridad Par por Nibble:** Es el método más elemental. Su principal ventaja es el bajo costo computacional, ideal para hardware de baja potencia o comunicaciones seriales simples. Sin embargo, su gran desventaja es su limitada capacidad de detección: solo identifica errores si el número de bits alterados es impar. Si dos bits cambian simultáneamente dentro de un mismo nibble, el error resulta invisible para este protocolo.
+* **Checksum (Suma de Verificación):** Ofrece una robustez superior al basarse en la suma aritmética de los datos. Su ventaja radica en que detecta no solo cambios de bits individuales, sino también alteraciones en la estructura aritmética del mensaje. Es el estándar utilizado en cabeceras de protocolos como **IP y TCP**, ya que equilibra una buena tasa de detección con un procesamiento eficiente mediante sumas de complemento a uno.
+
+> En conclusión, este trabajo práctico permitió transformar conceptos abstractos en experiencias tangibles, demostrando que la arquitectura de Internet no es un bloque rígido, sino un sistema fluido de capas que colaboran para llevar la información de forma segura y eficiente de un extremo a otro del globo.

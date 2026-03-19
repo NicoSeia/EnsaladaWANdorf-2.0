@@ -25,7 +25,7 @@
 
 ### a.
 
-IMG
+![RdeC](https://github.com/user-attachments/assets/788ad204-e160-48d2-a26b-5ed213d2f33d)
 
 - **Capa de aplicación**
   - Cada primer ministro formula el mensaje en su idioma nativo (chino / francés).
@@ -42,7 +42,7 @@ IMG
 
 ### b.
 
-IMG 
+![RdeC2](https://github.com/user-attachments/assets/f0340f3b-6192-496e-98d8-64253835e0df)
 
 - **Flujo de la conversación**
   - China habla en chino y se traduce a japonés.

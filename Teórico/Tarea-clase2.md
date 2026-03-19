@@ -1,4 +1,4 @@
-# Tarea Clase 1
+# Tarea Clase 2
 
 - **Gastón E. Capdevila**
 - **Nicolas Seia**

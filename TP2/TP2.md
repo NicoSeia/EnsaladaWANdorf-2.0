@@ -81,6 +81,8 @@ Se introduce el conector en la cavidad de la pinza y se presiona con firmeza. Es
 
 Luego de la construcción realizamos la verificación de los cables construidos, y realizamos el testeo de si los cables estaban bien conectados. Mediante un tester para cables ethernet se realizo la prueba.
 
+![test-cable-utp](https://github.com/user-attachments/assets/d4394b22-7d81-4086-a799-e99fef580187)
+
 ---
 
 ## Parte 2

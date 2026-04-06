@@ -28,9 +28,11 @@
 
 ## Resumen
 
-
+Este trabajo práctico documenta la implementación de una red local, desde la infraestructura física hasta la capa de aplicación. En la primera etapa, se detalla la confección de cables UTP bajo la norma T568B. En la segunda, se describe la administración de un switch Cisco Catalyst 2950 mediante consola. El éxito de la configuración se validó mediante pruebas de conectividad ICMP (Ping), inspección de tablas ARP y la ejecución de un chat bidireccional con Netcat, verificando el correcto funcionamiento de la pila de protocolos TCP/IP.
 
 ## Introducción
+
+El objetivo de este laboratorio es integrar los conceptos teóricos del modelo OSI en un entorno práctico de red. El desarrollo se divide en dos ejes: el medio físico, centrado en la normativa y precisión del cableado estructurado, y la configuración lógica, enfocada en la administración de dispositivos de conmutación. A través de este proceso, se busca analizar el flujo de datos, el direccionamiento y la comunicación extremo a extremo, validando empíricamente cómo interactúan las diferentes capas de red para lograr una transferencia de información exitosa.
 
 ## Parte 1
 
@@ -83,12 +85,57 @@ Luego de la construcción realizamos la verificación de los cables construidos,
 
 ## Parte 2
 
-### 1)
+El objetivo de esta fase fue establecer una comunicación exitosa entre el software de administración y el hardware (Cisco Catalyst 2950), configurar los parámetros de red y validar el flujo de datos en las distintas capas del modelo OSI.
 
+**Paso 1: Establecimiento de la conexión de consola**
 
-### 2)
+Para la gestión inicial, conectamos la PC al puerto de consola del Switch utilizando el cable diseñado en la Parte 1. Configuramos el software Hercules SETUP utility (o PuTTy) con los siguientes parámetros serie estándar:
 
+- Puerto: COM3 (según el adaptador utilizado).
+- Baud rate: 9600.
+- Data size: 8 bits, sin paridad y 1 bit de parada.
 
-### 3)
+Al encender el equipo, observamos en los logs cómo las interfaces cambiaban su estado a "up" (Capa 1 activa).
 
+![interfaces](interfaces.jpeg)
 
+**Paso 2: Verificación del estado de interfaces**
+
+Una vez dentro de la consola del Switch (modo privilegiado #), ejecutamos comandos de diagnóstico para verificar que el hardware reconociera nuestras conexiones físicas.
+
+1. show ip interface brief: Nos permitió ver de forma resumida que la VLAN 1 tenía asignada la IP 192.168.1.2 y que las interfaces FastEthernet0/1 y 0/2 estaban operativas (Status: up / Protocol: up).
+
+2. show interfaces status: Con este comando validamos la negociación de velocidad (100 Mbps) y el modo Duplex (Full) de los puertos conectados, además de la asignación de VLANs (notando que algunos puertos estaban segmentados en la VLAN 2).
+
+![interfacesStatus](interfacesstatus.jpeg)
+
+**Paso 3: Pruebas de conectividad (Capa 3 - ICMP)**
+
+Con las PCs configuradas en el mismo segmento de red (192.168.1.0/24), procedimos a realizar pruebas de Ping para verificar la alcanzabilidad.
+
+- Realizamos un test hacia la IP 192.168.1.10 y 192.168.1.15, obteniendo tiempos de respuesta menores a 2ms. Esto confirmó que el encapsulamiento de datos y el medio físico funcionaban sin pérdida de paquetes.
+
+![pingpc1](pingpc1.jpeg)
+![pingvlan](pingvlan.jpeg)
+
+**Paso 4: Inspección de la tabla ARP**
+
+Para verificar el mapeo entre las direcciones lógicas (IP) y las direcciones físicas (MAC), consultamos la tabla ARP del switch mediante el comando:
+
+- show ip arp
+
+En la captura se observa cómo el switch aprendió las direcciones de los nodos conectados (ej. .10, .12 y .15), asociándolas a sus respectivas Hardware Addr (MAC addresses) a través de la interfaz Vlan1. Este es el paso previo necesario para que el Switch pueda conmutar tramas correctamente en la Capa 2.
+
+![ipconfiguradas](ipconfiguradas.jpeg)
+
+**Paso 5: Prueba de Capa de Aplicación (Netcat Cliente-Servidor)**
+
+Para finalizar, validamos que no solo hubiera conectividad de red, sino que las aplicaciones pudieran intercambiar mensajes a través de puertos específicos. Utilizamos la herramienta Netcat (nc):
+
+- Servidor: En una terminal ejecutamos nc -l 4000, poniendo a la máquina en modo "escucha" por el puerto TCP 4000.
+- Cliente: Desde otra PC ejecutamos nc 192.168.1.12 4000 para iniciar la conexión.
+
+Logramos establecer un chat bidireccional donde los mensajes enviados (como "hola", "probandoasdasd") llegaron íntegros, demostrando que la pila completa de protocolos estaba operativa gracias a la correcta construcción de los cables y la configuración del Switch.
+
+![nc1](nc1.jpeg)
+![nc2](nc2.jpeg)

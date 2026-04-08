@@ -234,3 +234,43 @@ La cabecera de IPv6 posee una longitud fija de 40 octetos, el doble que la parte
 2. Eliminación de la Suma de Comprobación: En IPv4, cada router debe recalcular el checksum porque el campo TTL cambia. IPv6 elimina este proceso, reduciendo drásticamente la carga de CPU en los dispositivos intermedios.
 3. Procesamiento de Opciones: Las cabeceras de extensión (excepto la hop by hop) no son examinadas por los routers intermedios. Esto evita el análisis detallado de la PDU en el núcleo de la red, acelerando el tránsito del paquete hacia el destino.
 4. Fragmentación en el Origen: IPv6 prohíbe que los routers fragmenten paquetes; es responsabilidad del sistema origen conocer la MTU de la ruta. Esto elimina una de las tareas más costosas computacionalmente para un router.
+
+### 18.12
+
+> Justifique el orden recomendado de las cabeceras de extensión de IPv6 (por ejemplo, ¿por qué va
+primero la cabecera de opciones salto-a-salto?, ¿por qué la cabecera de encaminamiento está antes que la
+cabecera de fragmentación?, y así hasta la cabecera final).
+
+En IPv6, a diferencia de IPv4, las opciones adicionales de cabeceras no van dentro de la cabecera principal sino en "cabeceras de extensión", las cuales se encadenan una tras otra. En este contexto, existe un orden jerárquico en el cual deben colocarse dichas cabeceras. Este orden existe con el objetivo de que los nodos intermedios o routers trabajen lo menos posible en el proceso de envio de datos y para que las funciones se apliquen en la secuencia lógica correcta. El orden es el siguiente:
+
+1. Opciones salto a salto: Va siempre en primer lugar después de la cabecera IPv6 porque es la única que todos los dispositivos de encaminamiento deben examinar y procesar. Permite que el router la identifique de inmediato.
+2. Cabecera de encaminamiento: Esta es la segunda cabecera y va previa a la cabecera de fragmentación porque el encaminamiento determina la ruta y los nodos intermedios por los que pasará el paquete.
+3. Cabecera de fragmentación: Está en tercer lugar ya que, luego de saber por qué nodos intermedios pasa la ruta, el nodo de origen se fragmenta. El nodo destino usa esta cabecera para reensamblar el paquete.
+4. Cabecera de seguridad: Protege el contenido reensamblado o valida la integridad de lo que realmente llega al destino.
+5. Cabeceras de destino: Contienen información que solo debe ser examinada por el nodo de destino final.
+
+### 18.16
+
+> Las especificaciones originales de IPv6 combinaban los campos de etiqueta de flujo y prioridad en un solo
+campo de etiqueta de flujo de 28 bits. Esto permitía a los flujos redefinir la interpretación de los diferentes
+valores de prioridad. Sugiera una razón por la que la especificación final incluye un campo de prioridad en un
+campo distinto.
+
+En un principio las combinaciones originales de IPv6 combinaban campos de etiqueta de flujo y prioridad en un solo campo de etiqueta de 28 bits, pero actualmente estos campos se separan. Esto se definió por razones de flexibilidad y eficiencia en la gestión de tráfico, en donde podemos destacar lo siguiente:
+
+1. Hay paquetes sin flujo, los cuales si bien no pertenecen a un flujo específico, siguen necesitando una prioridad. Si las etiquetas de flujo y prioridad estuvieran juntas, se requeriria generar nuevos flujos para estos casos.
+2. Un router puede leer los 8 bits de prioridad de forma estándar para poder decidir qué paquete enviar primero en caso de que haya congestión, sin tener que leer los 20 bits de etiqueta de flujo, logrando asi una mejora en la velocidad.
+3. Tener estas etiquetas separadas permite que la red gestione la calidad del servicio de forma global (etiqueta de prioridad), y por otro lado la etiqueta de flujo se usa para tratamientos más personalizados.
+
+### 18.17
+
+> Para el encaminamiento IPv6 tipo 0, especifique el algoritmo para actualizar las cabeceras IPv6 y de
+encaminamiento en los nodos intermedios.
+
+Cuando un paquete con encamintamiento IPv6 tipo 0 llega a un nodo intermedio, se sigue el siguiente algoritmo:
+
+1. Verificación de segmentos restantes: El nodo examina el campo de "Segmentos restantes" en la cabecera de encaminamiento. Si es 0, el nodo no vuelve a procesar la cabecera.
+2. Actualización de dirección de destino: Si aún quedan segmentos restantes, el nodo decrementa en 1 el valor del campo, luego busca en la lista de direcciones de la cabecera de encaminamiento la siguiente dirección a visitar y por último intercambia la dirección de destino de la cabecera IPv6 con la dirección obtenida de la lista.
+3. Reenvío: El paquete se reenvía hacia la nueva dirección de destino colodada en la cabecera principal.
+
+El proceso se repite hasta que el paquete llegue al destino final.

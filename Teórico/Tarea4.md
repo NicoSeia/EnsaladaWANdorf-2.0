@@ -86,6 +86,8 @@ Es un campo orientado a identificar y agrupar paquetes de una misma comunicació
 
 ### 18.1
 
+> En la discusión sobre IP, se mencionó que el identificador, el indicador de no fragmentar y el tiempo de vida se hallan presentes en la primitiva Send pero no en la primitiva Deliver, ya que esos parámetros no son competencia de IP. Indique, para cada una de estas primitivas, si es competencia de la entidad IP en el origen, de la entidad IP en cada dispositivo de encaminamiento intermedio o de la entidad IP en el sistema final destino. Justifique su respuesta.
+
 La primitiva **Send** actúa como la interfaz entre el nivel de Transporte y el nivel de Red en el origen, mientras que **Deliver** representa el paso de los datos del nivel de Red al de Transporte en el destino.
 
 | Parámetro | Competencia de la entidad IP en... | Justificación |
@@ -99,6 +101,8 @@ Esto se debe a que, una vez que la entidad IP en el destino ha reensamblado el d
 
 ### 18.2
 
+> ¿Cuál es la información suplementaria de la cabecera en el protocolo IP?
+
 En el protocolo IP, la información suplementaria se refiere principalmente al campo de Opciones. Aunque la cabecera base es fija (20 bytes), el campo de opciones permite funciones adicionales que no siempre son necesarias, como:
 
 - Security: Clasificación de seguridad del paquete.
@@ -108,6 +112,8 @@ En el protocolo IP, la información suplementaria se refiere principalmente al c
 
 ### 18.3
 
+> Describa algunas circunstancias en las que sería deseable utilizar encaminamiento en el origen en lugar de dejar a los dispositivos de encaminamiento que realicen la decisión de encaminamiento.
+
 Normalmente, el router decide el camino basándose en sus tablas. Sin embargo, el Source Routing (donde el origen dicta la ruta) es útil en:
 
 1. Diagnóstico y pruebas de red: Para forzar a un paquete a pasar por un enlace específico y verificar si está fallando.
@@ -116,6 +122,8 @@ Normalmente, el router decide el camino basándose en sus tablas. Sin embargo, e
 4. Redes con políticas específicas: Evitar pasar por la infraestructura de ciertos países o proveedores por razones legales o de privacidad.
 
 ### 18.5
+
+> Un datagrama de 4.480 octetos se va a transmitir y se necesita fragmentar ya que va a pasar por una red Ethernet con un campo máximo de carga útil de 1.500 octetos. Muestre los valores de los campos longitud total, indicador de más segmentos y desplazamiento de fragmento en cada uno de los fragmentos resultantes.
 
 Datos iniciales:
 
@@ -142,3 +150,87 @@ Longitud total = 20 (data) + 20 (cabecera) = 40 octetos
 
 Offset = (1.480 x 3) / 8 = 555
 
+### 18.7
+
+> Se va a segmentar un datagrama. ¿Qué opciones del campo de opción se necesitan copiar en la cabecera de cada fragmento y cuáles se necesitan copiar sólo en el primer fragmento? Justifique el tratamiento de cada opción.
+
+En el protocolo IPv4, cuando un datagrama debe ser fragmentado para adaptarse a la MTU de una red, no todas las opciones presentes en la cabecera original se replican en todos los fragmentos. El diseño de IP utiliza un bit específico (el bit de Copiado o Copy flag) en el primer octeto de cada opción para determinar este comportamiento.
+
+#### 1. Opciones que deben copiarse en todos los fragmentos
+
+Estas opciones son críticas para que los routers intermedios traten cada fragmento de manera idéntica y aseguren que lleguen al destino.
+- Seguridad: Permite incorporar una etiqueta de seguridad al datagrama. Si un fragmento no tuviera esta etiqueta, un router que aplique políticas de seguridad basadas en el nivel de clasificación de los datos podría descartar los fragmentos "anónimos" o tratarlos de forma incorrecta, impidiendo el reensamblado.
+- Source Routing: Especifica la ruta secuencial de routers que debe seguir el paquete. Dado que cada fragmento es una PDU independiente que se encamina por separado en la capa de red , todos deben contener la lista de saltos para poder navegar a través de la red hasta el destino final.
+
+#### 2. Opciones que se copian solamente en el primer fragmento
+
+Estas opciones suelen tener fines de diagnóstico o control y su repetición en cada fragmento generaría una sobrecarga innecesaria (overhead) sin aportar valor al reensamblado.
+- Registro de la ruta: Se utiliza para registrar la secuencia de routers visitados. Es suficiente con que el primer fragmento registre el camino para fines de depuración. Registrar la ruta en cada fragmento consumiría espacio valioso en la cabecera de todas las PDU fragmentadas.
+- Timestamp: Registra el tiempo en milisegundos al pasar por los routers. Al igual que el registro de ruta, es una herramienta de medición. Repetir esta operación en cada fragmento aumentaría el tiempo de procesamiento en los routers y la latencia total sin beneficio para la entrega de los datos originales.
+
+### 18.8
+
+> Un mensaje de la capa de transporte, que contiene 1.500 bits de datos y 160 bits de cabecera, se envía a la capa internet, la cual incorpora otros 160 bits de cabecera. El resultado se transmite a través de dos redes que utilizan cada una 24 bits de cabecera de paquete. La red destino tiene un tamaño de paquete máximo de 800 bits. ¿Cuántos bits, incluyendo cabeceras, se entregan al protocolo de la capa de red en el destino?
+
+#### Datos Iniciales
+
+- Mensaje de transporte ($M_T$): 1500 bits (datos) + 160 bits (cabecera de transporte) = 1660 bits
+- Datagrama Original ($D_{IP}$): 1600 bits + 160 bits (cabecera IP) = 1820 bits
+- Restricciones de la red de destino:
+  - MTU: 800 bits
+  - Cabecera de Red (H_{net}): 24 bits
+
+#### Restricciones de Fragmentación e IP
+
+Para que el datagrama atraviese la red destino, el paquete total (incluyendo la cabecera de red) no debe superar los 800 bits.
+
+1. Espacio disponible para la PDU de IP: $MTU - H_{net} = 800 - 24 = $ 776 bits
+2. Espacio para Payload: como cada fragmento requiere de su propia cabecera IP de 160 bits, el espacio es $776 - 160 = $ 616 bits
+3. Regla de los 64 bits: en IPv4, la carga util de cada fragmento (excepto el ultimo) debe ser un multiplo de 8 octetos (64 bits) para poder representarse correctamente en el campo Fragment Offset
+   - Carga maxima alineada (se hace ajuste por truncamiento): $\lfloor \frac{616}{64} \rfloor \times 64 = $ 576 bits
+
+#### Desglose de Fragmentos y Composicion
+
+El payload original de la capa de transporte (1660 bits) se divide en fragmentos de maximo 576 bits:
+
+| Fragmento | Carga Útil (Transporte) | Cabecera IP | Cabecera Red | Total Bits |
+| :--- | :---: | :---: | :---: | :---: |
+| **Fragmento 1** | 576 bits | 160 bits | 24 bits | 760 bits |
+| **Fragmento 2** | 576 bits | 160 bits | 24 bits | 760 bits |
+| **Fragmento 3** | 508 bits (1660 - 1152) | 160 bits | 24 bits | 692 bits |
+
+#### Bits Totales Entregados
+
+La cantidad total de bits que se entregan al protocolo de red en el destino es la suma de todos los fragmentos transmitidos a través de la interfaz física para completar el mensaje original:
+
+$$Total = 760 + 760 + 692 = 2212 \text{ bits}$$
+
+Este incremento (de 1820 a 2212 bits) representa la overhead introducida por la duplicación de cabeceras IP y la adición de cabeceras de red necesarias para gestionar la fragmentación en el camino.
+
+### 18.11
+
+> Compare los campos individuales de la cabecera IPv4 con los de la cabecera IPv6. Compare las posibilidades proporcionadas por cada uno de los campos de IPv4 con los de IPv6.
+
+| Campo IPv4 | Campo IPv6 | Estado | Justificación y Cambios Funcionales |
+| :--- | :---: | :---: | :--- |
+| **Versión** | **Versión** | Igual | Se mantiene para identificar la versión del protocolo; el valor cambia de 4 a 6. |
+| **IHL** | --- | **Eliminado** | La cabecera IPv6 es de longitud fija (40 octetos), eliminando la necesidad de este campo. |
+| **Tipo de Servicio (TOS)** | **Clase de Tráfico** | **Renombrado** | Se utiliza para identificar prioridades y clases de paquetes; incluye campos DS y ECN. |
+| **Longitud Total** | **Longitud de Carga Útil** | **Modificado** | IPv4 mide cabecera + datos. IPv6 mide solo las cabeceras de extensión y la PDU de transporte. |
+| **Identificación** | --- | **Eliminado*** | Se movió a la "Cabecera de Fragmentación" opcional. Solo se usa si hay fragmentación. |
+| **Indicadores (Flags)** | --- | **Eliminado*** | Se movieron a la "Cabecera de Fragmentación". |
+| **Desplazamiento** | --- | **Eliminado*** | Se movió a la "Cabecera de Fragmentación". |
+| **Tiempo de Vida (TTL)** | **Límite de Saltos** | **Renombrado** | Simplificación funcional; se trata estrictamente como un contador de saltos. |
+| **Protocolo** | **Cabecera Siguiente** | **Modificado** | Identifica el protocolo superior o la primera cabecera de extensión de IPv6. |
+| **Suma de Comprobación** | --- | **Eliminado** | Se eliminó para agilizar el encaminamiento, confiando en las capas de enlace y transporte. |
+| **Dirección Origen** | **Dirección Origen** | **Modificado** | Se expande de 32 bits a 128 bits. |
+| **Dirección Destino** | **Dirección Destino** | **Modificado** | Se expande de 32 bits a 128 bits. |
+| **Opciones** | --- | **Eliminado** | Se reemplazaron por "Cabeceras de Extensión" que se procesan solo en los extremos. |
+| --- | **Etiqueta de Flujo** | **Nuevo** | Identifica paquetes que requieren tratamiento especial por flujos específicos (ej. tiempo real). |
+
+La cabecera de IPv6 posee una longitud fija de 40 octetos, el doble que la parte obligatoria de IPv4, pero contiene menos campos (8 frente a 12). Esta aparente contradicción se explica por la expansión de las direcciones: mientras que en IPv4 las direcciones ocupan el 40% de la cabecera (8 de 20 octetos), en IPv6 ocupan el 80% (32 de 40 octetos). Esto tiene el siguiente impacto:
+
+1. Longitud Fija y Alineación: Al ser siempre de 40 octetos, los routers no necesitan calcular dónde terminan las opciones y empiezan los datos en cada salto. Esto permite que el hardware (ASICs) procese los paquetes de forma paralela y predecible.
+2. Eliminación de la Suma de Comprobación: En IPv4, cada router debe recalcular el checksum porque el campo TTL cambia. IPv6 elimina este proceso, reduciendo drásticamente la carga de CPU en los dispositivos intermedios.
+3. Procesamiento de Opciones: Las cabeceras de extensión (excepto la hop by hop) no son examinadas por los routers intermedios. Esto evita el análisis detallado de la PDU en el núcleo de la red, acelerando el tránsito del paquete hacia el destino.
+4. Fragmentación en el Origen: IPv6 prohíbe que los routers fragmenten paquetes; es responsabilidad del sistema origen conocer la MTU de la ruta. Esto elimina una de las tareas más costosas computacionalmente para un router.

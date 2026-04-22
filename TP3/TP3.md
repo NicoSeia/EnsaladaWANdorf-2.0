@@ -45,5 +45,12 @@ En conjunto, el trabajo permitió comprender la importancia del cifrado, la conf
 ## Parte 1
 
 ## Parte 2
+<img width="1302" height="602" alt="ce47481a-fea8-4ec7-9d8a-b44613537ce2" src="https://github.com/user-attachments/assets/b23ac037-fddc-45b2-a313-bdaab23131dd" />
 
 ## Parte 3
+
+## Parte 4
+### 4.a
+
+### 4.b
+<img width="1171" height="547" alt="47e70ddc-0dc7-47e9-8ede-28d071d2dcc5" src="https://github.com/user-attachments/assets/677cb69a-3476-4585-8623-2a8017c99047" />

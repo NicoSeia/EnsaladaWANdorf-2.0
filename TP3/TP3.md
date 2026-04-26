@@ -44,6 +44,42 @@ En conjunto, el trabajo permitió comprender la importancia del cifrado, la conf
 
 ## Parte 1
 
+**a) ¿Qué es SSH y qué problema resuelve?**
+
+Antes de SSH existían protocolos como Telnet o rsh para conectarse remotamente a otras máquinas, pero transmitían todo en texto plano, incluyendo contraseñas. Cualquiera con acceso a la red podía interceptar esa información fácilmente. SSH (Secure Shell) es un protocolo de red que permite conectarse y controlar una computadora remota de forma segura. 
+
+**b) Diferencia entre autenticación y cifrado**
+
+- Cifrado: es asegurar el canal, es decir que aunque alguien intercepte los datos, no los pueda ver. Es decir que protege el contenido de la comunicación.
+- Autenticación: es verificar que la máquina del otro lado es realmente quien dice ser. Es como pedir el documento antes de abrir la puerta.
+
+**c) ¿Qué es una clave pública y una clave privada?**
+
+Son un par de claves matemáticamente relacionadas:
+
+- Clave pública: podés compartirla con cualquiera. Se usa para cifrar mensajes o verificar tu identidad.
+- Clave privada: solo la tenés vos. Se usa para descifrar mensajes o firmar tu identidad.
+
+Lo que una cifra, solo la otra puede descifrarlo. La magia está en que conocer la clave pública no te permite deducir la privada.
+
+**d) ¿Por qué la clave privada no debe compartirse?**
+
+La clave privada es literalmente tu identidad digital. Si alguien la obtiene:
+
+- Puede hacerse pasar por vos ante cualquier servidor
+- Puede descifrar todo el tráfico que te enviaron cifrado con tu clave pública
+- No hay forma de distinguir al atacante de vos
+
+**e) ¿Qué ventajas tienen las claves SSH frente a contraseñas?**
+
+| | Contraseñas | Claves SSH |
+|---|---|---|
+| **Viajan por la red** | Sí (aunque cifradas) | No, nunca |
+| **Vulnerables a fuerza bruta** | Sí | Prácticamente no |
+| **Pueden ser adivinadas** | Sí | No |
+| **Automatización** | Complicado | Muy fácil |
+| **Pueden filtrarse** | Sí (phishing, etc.) | No (la privada nunca sale de tu máquina) |
+
 ## Parte 2
 Se validó la conectividad y administración remota de una VM mediante el protocolo SSH. Se consideran tres aspectos importantes:
 1. Se ajustaron los privilegios de la clave privada utilizando el comando chmod 400, de modo que solo el propietario tenga permisos de escritura.

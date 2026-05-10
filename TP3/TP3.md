@@ -126,6 +126,38 @@ Por último se estableció una sesión de chat entre dos máquinas virtuales ind
 En esta actividad se capturó la interacción entre el cliente y el servidor utilizando el protocolo HTTP. A diferencia del protocolo SSH, este es un protocolo que transmite la información sin cifrar por ende lo podemos ver en WireShark sin problema.
 <img width="1298" height="682" alt="image" src="https://github.com/user-attachments/assets/d9e416bd-d7dc-4925-847e-af81f90b8b68" />
 
+### 6.a Relación con los TPs
 
+El ataque de "Man-in-the-Middle" (MitM) realizado al iPhone se conecta directamente con los pilares que hemos trabajado en clase:
 
+#### TP N°1: Manipulación de Bits y el Rol del "Salto" (Hop)
 
+- **Modificación de la Payload:** En la Parte 2 del TP1, realizamos ejercicios de inyección de errores modificando bits de la payload para probar técnicas de detección (EDAC). El hack de Veritasium hace exactamente eso:
+  - Cambian un bit específico (de 0 a 1) para engañar al teléfono y que crea que es una transacción "offline".
+  - Cambian otro bit para marcar una transacción de $10,000 como de "bajo valor".
+
+- **Comportamiento Hop-by-Hop:** En el TP1 analizamos cómo los routers procesan los paquetes en cada salto. Aquí, el dispositivo Proxmark y la laptop actúan como "nodos" o saltos maliciosos intermedios que decodifican, modifican y vuelven a encapsular la información antes de enviarla al destino final (el lector de tarjetas).
+
+#### TP N°2: Comunicación Cliente-Servidor y Herramientas de Red
+
+- **Flujo de Datos:** El uso de un script de Python para retransmitir datos entre el teléfono "víctima" y el lector es conceptualmente idéntico a lo que hicimos con Netcat en el TP2 para establecer un chat bidireccional. El atacante establece un "puente" de comunicación donde el cliente (iPhone) cree que habla con un servidor (Lector), pero hay un intermediario procesando los mensajes.
+
+#### TP N°3: Criptografía, Wireshark y el dilema de la Seguridad
+
+- **Captura de Tráfico (Wireshark):** En el TP3 usamos Wireshark para intentar "ver" qué hay dentro de un paquete. Los investigadores del video deben haber hecho algo parecido en el Metro de Londres para "escanear los códigos" que las terminales enviaban a los teléfonos.
+
+- **Autenticación vs. Cifrado:** El video explica que el hack es posible porque la comunicación NFC no está cifrada (por razones de compatibilidad). Esto es lo opuesto a lo que vimos con SSH en el TP3: mientras que en SSH el contenido es ilegible sin la clave, en el protocolo de Visa/Apple Pay los datos viajan "en claro", permitiendo que el atacante lea y modifique los bits de control.
+
+- **Claves Públicas y Privadas (RSA):** El video menciona que MasterCard evita este ataque usando firmas digitales (RSA). En el TP3 estudiamos que las claves públicas/privadas sirven para garantizar que un mensaje no fue alterado. El hack de Visa funciona porque el lector no verifica la firma digital de la transacción cuando está online, omitiendo el paso de seguridad que estudiamos en la teoría de SSH.
+
+### 6.b Consideraciones sobre Confidencialidad y Resultados del Laboratorio
+
+Basándonos en el Principio de Confidencialidad y lo aprendido en nuestros laboratorios, debemos tener en cuenta los siguientes puntos críticos:
+
+1. **La falacia de la "seguridad por oscuridad":** El video demuestra que confiar en que un protocolo es "complejo" o "propietario" no garantiza confidencialidad. Al igual que en el TP3 vimos que el tráfico Telnet o HTTP simple puede ser capturado, cualquier protocolo que no implemente cifrado de extremo a extremo (como el NFC de este caso) es vulnerable a la intercepción.
+2. **Integridad como requisito de la Confidencialidad:** Un resultado clave de nuestro laboratorio (especialmente TP1 y TP3) es que la confidencialidad no sirve de nada si no hay Integridad. En el video, el atacante puede no saber quién es el dueño del teléfono, pero al poder alterar el mensaje (integridad), rompe la seguridad del sistema. Si los datos estuvieran firmados digitalmente (como las claves de SSH), cualquier cambio en un solo bit invalidaría la transacción.
+3. **El riesgo de la "Compatibilidad hacia atrás":** El video menciona que la información se envía sin cifrar para ser compatible con miles de dispositivos viejos. 
+
+En el TP3, al intentar descifrar un paquete SSH, confirmamos que sin la clave privada, el contenido es ruido. La recomendación técnica (y lo que Apple/Visa deberían corregir) es forzar el uso de esa criptografía asimétrica que estudiamos, eliminando los modos "relajados" de verificación que permiten las mentiras del atacante.
+
+En resumen, el hack es una demostración de que, aunque tengamos hardware avanzado (iPhone con FaceID), si los protocolos de red subyacentes permiten el envío de datos sin cifrar y sin verificación de firma (como vimos que sí hace SSH), la seguridad física puede ser totalmente bypassada por un ataque en la capa de comunicación.

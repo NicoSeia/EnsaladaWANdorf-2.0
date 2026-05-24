@@ -79,6 +79,22 @@ La diferencia esencial entre ambas metodologías radica en el **formato de repre
 
 ---
 
+## Punto 2 - Verificación y Resultados Obtenidos
+
+Como se evidencia en los logs de la terminal y en la ventana de conexión persistente del panel inferior derecho de la captura de pantalla:
+
+![Punto 2](punto_2.png)
+
+1. **Establecimiento de Conexión:** El servidor detectó exitosamente el intento de conexión e imprimió la bienvenida al nodo local:
+`Hello 127.0.0.1 welcome to the server!`.
+2. **Deserialización y Validación:** El hilo asignado por el servidor recibió el flujo de bytes, aplicó el método de decodificación en formato `utf-8` y parseó la estructura mediante la librería `json.loads()`.
+3. **Procesamiento Exitoso:** Al validar que el diccionario contenía las claves estrictas `"group"` y `"payload"`, el servidor imprimió en la salida estándar de la consola la información ya interpretada lógicamente:
+`EnsaladaWANdorf-2.0: Hola, este mensaje viene desde Packet Sender!`.
+
+Esto demuestra de forma empírica que el proceso de serialización en el origen (Packet Sender) y deserialización en el destino (servidor Python) se completó sin pérdida de integridad ni errores de formato.
+
+---
+
 ## **Fuentes Bibliográficas de Referencia**
 
 * **Comer, D. E. (2014).** *Internetworking with TCP/IP Vol. I: Principles, Protocols, and Architecture* (6th ed.). Pearson Education. *(Capítulos referenciales sobre encapsulamiento en la capa de transporte, stream de datos y delimitación lógica de mensajes a nivel de aplicación).* 

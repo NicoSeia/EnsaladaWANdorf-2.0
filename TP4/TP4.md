@@ -95,6 +95,25 @@ Esto demuestra de forma empírica que el proceso de serialización en el origen 
 
 ---
 
+## Punto 3 - Verificación y Resultados del Cliente Interactivo
+
+Como se evidencia en las trazas concurrentes de las terminales de ejecución para el cliente y el servidor:
+
+![Punto 3](punto_3.png)
+
+1. **Configuración de Parámetros Dinámicos y Valores por Defecto:** Al inicializar el script `client.py`, el programa solicitó de forma interactiva el direccionamiento de la capa de transporte. Al presionar la tecla Enter en los prompts de IP y Puerto, las rutinas lógicas asignaron por defecto los valores de Loopback `127.0.0.1` y el puerto TCP `5000` respectivamente. A su vez, se seleccionó la opción `2` para conmutar el comportamiento del cliente hacia el modo de conexión persistente.
+2. **Establecimiento de Sockets y Persistencia del Canal:** Tras ingresar el identificador del grupo (`Ensalada-WANdorf`), el cliente invocó la llamada del sistema `connect()`, completando el 3-way handshake con el backend. Esto se constata en la terminal superior, donde el hilo del servidor de escucha remota arrojó el mensaje:
+`Hello 127.0.0.1 welcome to the server!`.
+El descriptor del socket se mantuvo abierto en memoria de forma continua, evitando la sobrecarga de reconexión ante ráfagas de tráfico.
+3. **Ciclo de Serialización e Inyección de Cargas Útiles:** A través del bucle interactivo, se enviaron tres payloads secuenciales. En cada iteración, el script estructuró el diccionario con las claves `"group"` y `"payload"`, ejecutó la serialización a un string plano mediante `json.dumps()` y empaquetó el flujo de bytes codificado en `utf-8` a través de la primitiva de red `sendall()`.
+El servidor procesó de forma transparente los tres bloques de datos en la misma sesión, imprimiendo en orden cronológico:
+   * `Ensalada-WANdorf: Hola! Este es mi primer mensaje`
+   * `Ensalada-WANdorf: Este es logicamente el segundo`
+   * `Ensalada-WANdorf: Me voy, nos vemos`
+4. **Manejo de Interrupciones y Cierre Seguro del Enlace:** Al presionar la combinación de teclas **CTRL+C** (`^C`), el entorno interceptó la señal `SIGINT`. La estructura de control interna detuvo el bucle de envío de forma limpia sin generar excepciones abruptas en los descriptores del sistema operativo. El bloque finalizador ejecutó la desconexión segura del socket, permitiendo que el servidor liberara el hilo concurrente e imprimiera el log de cierre de socket: `Bye 127.0.0.1!`.
+
+---
+
 ## **Fuentes Bibliográficas de Referencia**
 
 * **Comer, D. E. (2014).** *Internetworking with TCP/IP Vol. I: Principles, Protocols, and Architecture* (6th ed.). Pearson Education. *(Capítulos referenciales sobre encapsulamiento en la capa de transporte, stream de datos y delimitación lógica de mensajes a nivel de aplicación).* 

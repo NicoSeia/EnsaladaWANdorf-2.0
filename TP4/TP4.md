@@ -114,6 +114,39 @@ El servidor procesó de forma transparente los tres bloques de datos en la misma
 
 ---
 
+## Punto 4 - Implementación de Seguridad (Cifrado Simétrico)
+
+Para dotar de confidencialidad e integridad a la comunicación entre el cliente y el servidor, se implementó un esquema de cifrado sobre el contenido del mensaje, manteniendo la estructura general del paquete JSON intacta.
+
+### a) Implementación del cifrado en el lado del cliente
+Se utilizó la librería `cryptography` de Python, específicamente el módulo estandarizado `Fernet`. En el cliente, se definió una clave estática compartida (`SECRET_KEY`). Al momento de capturar el ingreso del usuario, antes de ensamblar el diccionario JSON, el sistema encripta exclusivamente el valor correspondiente a la carga útil (`payload`), convirtiendo el texto plano en un token seguro incomprensible.
+
+### b) Verificación en el servidor
+En el backend, el servidor intercepta el flujo JSON. Para verificar empíricamente que la información viaja encriptada y protegida contra *sniffers* de red (como Wireshark), se implementó un log que imprime la payload en crudo (`raw`) antes de su procesamiento. Una vez documentado e interceptado el texto cifrado *(ver captura a continuación)*, el servidor procede a desencriptar la carga útil utilizando la misma clave compartida y la expone en su formato original.
+
+*[Espacio reservado para capturas de pantalla de la terminal mostrando el payload encriptado en el servidor]*
+
+### c) Características de la técnica de cifrado utilizada
+
+El esquema implementado a través de **Fernet** proporciona una seguridad robusta en la capa de aplicación al integrar múltiples mecanismos de protección criptográfica:
+
+1. **Cifrado Simétrico (AES):** Utiliza la misma clave criptográfica matemática tanto en el origen (cliente) para encriptar como en el destino (servidor) para desencriptar. Internamente, se basa en el **Advanced Encryption Standard (AES)** con una clave de 128 bits.
+2. **Vector de Inicialización (IV) y Modo CBC:** Opera en modo *Cipher Block Chaining*. Fernet genera un vector de inicialización pseudoaleatorio distinto para cada paquete enviado. Esto asegura que si el usuario envía el mismo mensaje exacto dos veces consecutivas, el texto cifrado que viaja por la red será completamente diferente, impidiendo ataques estadísticos o de deducción de patrones.
+3. **Autenticación e Integridad (HMAC-SHA256):** Esta técnica no se limita a brindar confidencialidad. Cada mensaje cifrado es firmado criptográficamente utilizando *HMAC (Hash-based Message Authentication Code)* con el algoritmo SHA256. Esto garantiza que si un atacante *Man-in-the-Middle* intercepta el paquete y modifica un solo bit del payload cifrado en un intento por corromperlo, el servidor detectará la manipulación al instante al intentar validar la firma y abortará la operación.
+4. **Compatibilidad de Formato de Red (Base64):** El token cifrado resultante está empaquetado y codificado en formato de texto url-safe **Base64**. Esta característica es vital para la serialización, ya que permite introducir los bytes resultantes del cifrado dentro del esquema JSON en formato de texto plano sin generar caracteres especiales que puedan romper la estructura sintáctica del mensaje.
+
+### Pruebas
+
+#### Cliente
+
+![alt text](image.png)
+
+#### Servidor
+
+![alt text](image-1.png)
+
+---
+
 ## **Fuentes Bibliográficas de Referencia**
 
 * **Comer, D. E. (2014).** *Internetworking with TCP/IP Vol. I: Principles, Protocols, and Architecture* (6th ed.). Pearson Education. *(Capítulos referenciales sobre encapsulamiento en la capa de transporte, stream de datos y delimitación lógica de mensajes a nivel de aplicación).* 

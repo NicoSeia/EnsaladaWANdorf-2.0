@@ -1,10 +1,15 @@
 import socket
 import threading
 import json
+from cryptography.fernet import Fernet
 
 HOST = "0.0.0.0"
 PORT = 5000
 BUFFER_SIZE = 1024
+
+# La misma clave simétrica compartida con el cliente
+SECRET_KEY = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
+cipher_suite = Fernet(SECRET_KEY)
 
 
 def handle_client(client_socket, client_address):
@@ -29,7 +34,14 @@ def handle_client(client_socket, client_address):
                     and isinstance(message["group"], str)
                     and isinstance(message["payload"], str)
                 ):
-                    print(f"{message['group']}: {message['payload']}")
+                    # b) Verificamos que llega cifrada imprimiendo el raw
+                    payload_cifrada = message["payload"]
+                    print(f"\n[INTERCEPTADO] Payload encriptada: {payload_cifrada}")
+                    
+                    # Desciframos la payload para procesarla lógicamente
+                    payload_descifrada = cipher_suite.decrypt(payload_cifrada.encode("utf-8")).decode("utf-8")
+                    print(f"{message['group']}: {payload_descifrada}\n")
+                    
                 else:
                     print(f"{ip_address} wants to send an ill formatted message.")
 

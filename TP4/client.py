@@ -1,5 +1,10 @@
 import socket
 import json
+from cryptography.fernet import Fernet
+
+# Definimos una clave estática de 32 bytes en base64 para el cifrado simétrico
+SECRET_KEY = b'YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE='
+cipher_suite = Fernet(SECRET_KEY)
 
 # 3.a) Configuración de IP y Puerto con valores por defecto al presionar Enter
 host_input = input("Ingrese la IP del servidor [Por defecto: 127.0.0.1]: ")
@@ -21,7 +26,11 @@ grupo = input("\nIngrese el nombre de su grupo: ")
 if not es_persistente:
     # --- MODO CONEXIÓN ÚNICA ---
     contenido = input("Ingrese el mensaje/payload a enviar: ")
-    message = {"group": grupo, "payload": contenido}
+    
+    # CIFRADO DE LA PAYLOAD
+    # Convertimos a bytes, ciframos y volvemos a decodificar a string para que JSON lo soporte
+    payload_cifrada = cipher_suite.encrypt(contenido.encode("utf-8")).decode("utf-8")
+    message = {"group": grupo, "payload": payload_cifrada}
 
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -53,8 +62,11 @@ else:
                 if not contenido.strip():
                     continue
 
+                # CIFRADO DE LA PAYLOAD
+                payload_cifrada = cipher_suite.encrypt(contenido.encode("utf-8")).decode("utf-8")
+
                 # Reutiliza el mismo socket estructurando la morfología JSON requerida
-                message = {"group": grupo, "payload": contenido}
+                message = {"group": grupo, "payload": payload_cifrada}
 
                 client.sendall(json.dumps(message).encode("utf-8"))
                 print("[ENVIADO] Paquete inyectado en el socket activo.")

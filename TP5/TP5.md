@@ -104,6 +104,17 @@
 * **b) Capa del modelo TCP/IP:** Se gestiona íntegramente en la **Capa de Aplicación**.
 * **c) ¿Qué pasaría si falta?:** Todo el tráfico del sistema (tanto el usuario que se registra como los miles de usuarios que solo están navegando y mirando contenido) impactaría sobre la misma base de datos. En aplicaciones con alto porcentaje de lectura, la base de datos se convertiría rápidamente en el cuello de botella central del sistema.
 
+## Punto 2 - Tabla de Clasificación de Tipos de Tráfico
+
+| Tipo de Tráfico | Ejemplo Real | Componente Recomendado | Riesgo si se procesa incorrectamente |
+| --- | --- | --- | --- |
+| **STATIC** | Logotipos, archivos CSS de estilos, frameworks JavaScript (`.js`), fuentes tipográficas o páginas HTML fijas. | **CDN** | Si impacta directo en el server, se desperdicia ancho de banda y ciclos de CPU esenciales entregando archivos pesados y repetitivos, ralentizando la lógica del backend. |
+| **READ** | Consultar el feed de publicaciones de una red social, listar productos disponibles en una tienda, o ver el perfil público de un usuario. | **Storage** (Réplicas de Lectura / Caché si existiera) | Si todas las consultas pesadas van directo al nodo de almacenamiento principal, se satura el disco con operaciones repetitivas, aumentando la latencia general del sistema. |
+| **WRITE** | Registrar un nuevo usuario, realizar una compra (crear una factura) o dar "me gusta" a una publicación. | **Servidor** + **Storage** (Base de datos transaccional principal) | Si no se procesa mediante una cola o directamente en un almacenamiento consistente, se pueden duplicar transacciones, corromper registros concurrentes o perder datos críticos por bloqueos de tablas. |
+| **UPLOAD** | Subir una foto de perfil en alta resolución, adjuntar un archivo PDF en un formulario o subir un video corto. | **Storage** | Si el archivo se guarda en el disco local de la instancia del servidor, el disco rígido se llenará rápidamente, degradando el sistema operativo y haciendo imposible el escalado horizontal. |
+| **SEARCH** | Buscar un producto por palabras clave en la barra de búsqueda empleando filtros por precio, categoría y ubicación en tiempo real. | **Search Engine** (ej. Elasticsearch) | Si se obliga al almacenamiento relacional común (`Storage`) a procesar búsquedas semánticas o de texto completo, la base de datos se congela por el alto consumo de CPU. |
+| **MALICIOUS** | Ataques de inyección SQL, scripts automatizados para adivinar contraseñas (fuerza bruta) o ataques de denegación de servicio (DDoS). | **Firewall** (o WAF / Reglas de filtrado perimetral) | Si el tráfico malicioso pasa de largo y llega a los componentes de cómputo, consumirá todos los recursos disponibles, tirando el sistema abajo para los usuarios reales. |
+
 ---
 
 ## **Fuentes Bibliográficas de Referencia**

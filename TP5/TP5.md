@@ -115,6 +115,74 @@
 | **SEARCH** | Buscar un producto por palabras clave en la barra de búsqueda empleando filtros por precio, categoría y ubicación en tiempo real. | **Search Engine** (ej. Elasticsearch) | Si se obliga al almacenamiento relacional común (`Storage`) a procesar búsquedas semánticas o de texto completo, la base de datos se congela por el alto consumo de CPU. |
 | **MALICIOUS** | Ataques de inyección SQL, scripts automatizados para adivinar contraseñas (fuerza bruta) o ataques de denegación de servicio (DDoS). | **Firewall** (o WAF / Reglas de filtrado perimetral) | Si el tráfico malicioso pasa de largo y llega a los componentes de cómputo, consumirá todos los recursos disponibles, tirando el sistema abajo para los usuarios reales. |
 
+## Punto 3 - Testeando queues
+
+Distribución de trafico:
+
+| STATIC |	READ |	WRITE |	UPLOAD |	SEARCH |	ATTACK |
+| --- | --- | --- | --- | --- | --- |
+| 30% |	20%	| 15% |	5% |	10% |	20% |
+
+#### ¿Qué sucede al incrementar el rate? Después de la queue
+
+Al aumentar el throughput, la cantidad de tráfico que llega supera la capacidad de procesamiento inmediato de los nodos siguientes o del enlace. Al no dar abasto, los paquetes empiezan a acumularse en la queue. La cola sirve justamente como un "buffer" o colchón de memoria.
+
+#### Si mantenemos el rate alto y luego lo bajamos a cero, ¿qué sucede?
+
+A pesar de que el generador de tráfico ya está en cero (no entran más paquetes nuevos al firewall), después de la queue se siguen observando paquetes avanzando hacia la instancia final
+
+- Rate alto
+<img width="515" height="327" alt="image" src="https://github.com/user-attachments/assets/6e88191c-c3b8-4a8e-8164-a2fec6e84c0b" />
+
+- Drenado de queue
+<img width="516" height="347" alt="image" src="https://github.com/user-attachments/assets/629fd174-03c6-432e-ac3a-d305b0eb9a86" />
+
+## Punto 4 - Primera arquitectura
+
+- a) La arquitectura inicial, b) El presupuesto inicial, c) El estado de salud de los servicios
+
+<img width="1394" height="659" alt="image" src="https://github.com/user-attachments/assets/070f8bd8-59de-47bc-b7f1-a048b942f702" />
+
+- d) El momento que empieza a fallar, si es que falla
+
+<img width="1386" height="696" alt="image" src="https://github.com/user-attachments/assets/ddb5af93-8a6a-470c-9490-bf078195cc2a" />
+
+¿Qué componente falló primero?
+
+Los primeros componentes en mostrar signos de saturación y fallar de forma inminente fueron el nodo de Compute y la Message Queue. En la simulación se puede observar claramente que ambos cambiaron su color a naranja, lo que indica que entraron en un estado crítico de cuello de botella antes que el resto de los servicios de almacenamiento o bases de datos.
+
+¿Por qué creés que falló?
+
+El nodo de Compute falló porque alcanzó su límite absoluto de procesamiento, operando a Load: 4/4 (100%). Al estar este servidor completamente saturado, dejó de procesar las solicitudes a la velocidad que ingresaban. Esto provocó un efecto dominó inmediato sobre la Message Queue: como el servicio de cómputo no podía recibir más datos, la cola no pudo descargar sus paquetes y empezó a llenarse de forma crítica, pasando también a estado de alerta naranja por acumulación de tráfico.
+
+¿Fue un problema de capacidad, diseño, costo o seguridad?
+
+Fue principalmente un problema de capacidad. El diseño de la arquitectura es correcto porque delegó el tráfico a los servicios correspondientes (base de datos, almacenamiento, etc.) y usó una cola como buffer. Sin embargo, el nodo de Compute T1 resultó ser demasiado chico para el volumen de rate configurado.
+
+## Punto 5 - Escalabilidad y balanceo
+
+### Estrategia 1:
+
+<img width="754" height="425" alt="image" src="https://github.com/user-attachments/assets/f81da0e8-677d-433d-ac41-2c0af52822cd" />
+
+Se implementó un Load Balancer para distribuir el tráfico horizontalmente hacia tres instancias de Compute. Esto busca eliminar el cuello de botella del servidor único repartiendo la carga.
+
+### Estrategia 2:
+
+<img width="962" height="533" alt="image" src="https://github.com/user-attachments/assets/13ed85c6-9f02-4a9a-9964-b07cc284608a" />
+
+Se mantuvo el balanceador y los tres servidores, pero se agregó Cachés. Esto intenta interceptar las consultas repetitivas antes de que saturen los nodos de almacenamiento final.
+
+#### ¿Escalar horizontalmente siempre mejora el sistema?
+
+Estrategia 1: Al incrementar el rate a un valor mayor o igual a 30, los tres nodos de cómputo volvieron a fallar (se los ve en naranja/crítico). Aunque distribuir la carga ayuda a soportar más tráfico que antes, el escalado horizontal de la capa de aplicación no sirve si el volumen de solicitudes supera la capacidad de procesamiento combinada de los nuevos nodos, o si el cuello de botella se traslada a otro punto común.
+
+Estrategia 2: En la segunda imagen, a pesar de haber agregado nodos de caché y componentes adicionales para aliviar la carga, los tres servidores de cómputo volvieron a encender sus alertas en rojo (círculos rojos en la base de los cilindros). Esto demuestra que si la tasa de ingreso de datos es masiva, los servidores de cómputo se saturan de todas formas intentando procesar la lógica de negocio, los uploads o las escrituras en la base de datos, las cuales no se pueden cachear fácilmente.
+
+## Punto 6 - Sobrevivir
+
+
+
 ---
 
 ## **Fuentes Bibliográficas de Referencia**

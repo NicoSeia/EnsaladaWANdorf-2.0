@@ -180,8 +180,40 @@ Estrategia 1: Al incrementar el rate a un valor mayor o igual a 30, los tres nod
 Estrategia 2: En la segunda imagen, a pesar de haber agregado nodos de caché y componentes adicionales para aliviar la carga, los tres servidores de cómputo volvieron a encender sus alertas en rojo (círculos rojos en la base de los cilindros). Esto demuestra que si la tasa de ingreso de datos es masiva, los servidores de cómputo se saturan de todas formas intentando procesar la lógica de negocio, los uploads o las escrituras en la base de datos, las cuales no se pueden cachear fácilmente.
 
 ## Punto 6 - Sobrevivir
+<img width="1649" height="982" alt="image" src="https://github.com/user-attachments/assets/99ec0e1e-f574-4030-b033-58837a236921" />
 
+Para lograr la estabilidad económica y superar el millón de puntos, se diseñó una arquitectura inicial que luego fue evolucionando y duplicándose para soportar la carga masiva mediante escalamiento horizontal y redundancia.
 
+> **¿Por qué elegiste cada componente y qué tráfico atiende?**
+
+- **Firewall:** Era vital colocarlo como primer punto de contacto para purgar la red de tráfico basura antes de que consumiera capacidad de procesamiento. Atiende exclusivamente tráfico ATTACK (Malicioso).
+
+- **CDN (Content Delivery Network):** Para evitar que las descargas de contenido estático ocupen el ancho de banda y la CPU de los servidores principales, conectándolo directo al tráfico de entrada y apoyado en el Storage. Atiende tráfico STATIC.
+
+- **Load Balancer:** Al escalar la cantidad de servidores (Computes), se necesitaba un balanceador para distribuir equitativamente las peticiones y evitar que un solo servidor colapse. Al final, se utilizó un esquema de múltiples balanceadores para dividir la red en dos clústeres idénticos. Atiende todo el tráfico legítimo dinámico (READ, WRITE, UPLOAD, SEARCH).
+
+- **Compute (Servidores principales):** Son el núcleo de la aplicación. Se escalaron primero verticalmente (mejorándolos) para mantener la reputación alta, y luego horizontalmente (agregando más) para procesar las reglas de ruteo interno hacia las bases de datos. Requirieron mantenimiento manual constante para no perder paquetes. Actúan como enrutadores y procesadores de la lógica para el tráfico READ, WRITE, UPLOAD y SEARCH.
+
+- **Serverless Function (Delta Func):** Se implementó estratégicamente como motor económico de la arquitectura. Al ejecutar micro-transacciones rápidas, permitía generar ingresos extra (0,03 por transacción) que financiaron la expansión de la red. Microtareas y eventos transaccionales específicos derivados por el Load Balancer.
+
+- **Search Engine:** Las búsquedas colapsarían una base de datos tradicional. Se requería un motor indexado dedicado para resolver estas peticiones rápidamente. Tráfico SEARCH.
+
+- **Caché + SQL Database:** La base de datos SQL se agregó para dar consistencia a las peticiones complejas, pero se le antepuso un nodo de Caché para absorber las lecturas repetitivas y devolverlas en milisegundos sin tocar el disco. El Caché absorbe el tráfico READ, mientras que la SQL maneja WRITE y datos relacionales.
+
+- **NoSQL Database y Storage:** El Storage se utilizó para persistir archivos pesados, y la NoSQL para ingestar datos no estructurados a alta velocidad sin bloqueos. Storage procesa el tráfico UPLOAD; NoSQL procesa ráfagas de tráfico WRITE.
+
+> **¿Qué cuello de botella apareció primero?**
+
+El primer cuello de botella se presentó en los nodos de Compute. A medida que el rate de tráfico aumentaba, un solo servidor no daba abasto para procesar las derivaciones hacia las bases de datos y el storage simultáneamente. Su barra de carga se saturaba al máximo, amenazando con descartar paquetes y penalizar la reputación. La solución temporal fue mejorarlo (escalamiento vertical), pero inevitablemente la saturación obligó a implementar un escalamiento horizontal (agregar más nodos Compute) y finalmente duplicar la infraestructura completa.
+
+> **¿Qué componente escalarías si tuvieras más presupuesto?**
+
+Si el presupuesto y el espacio lo permitieran (quedaba presupuesto pero se dejó de evolucionar la red), la prioridad sería agregar Message Queues (Colas de Mensajes) entre los nodos de Compute y las bases de datos (SQL/NoSQL) y el Storage.
+Aunque la red actual tiene mucho poder de cómputo, ante un pico repentino y masivo de operaciones de escritura (WRITE) o subidas (UPLOAD), las bases de datos podrían convertirse en el nuevo cuello de botella. Las colas permitirían amortiguar ese tráfico pesado de forma asíncrona, asegurando que ningún paquete se pierda incluso si las bases de datos se demoran en escribir en disco, lo que también reduciría la necesidad de reparar los Computes tan frecuentemente por contrapresión. 
+
+A fines prácticos se dejó de evolucionar la red porque era repetir más de la misma dinámica, pero si se hubiera querido seguir escalando se hubiera optado por poner QUEUE para manejar las solicitudes WRITE, y se hubieran agregado más LOAD BALANCER junto con mas COMPUTE para seguir escalando la red horizontalmente. En el fallo se ve que falló por demasiadas peticiones WRITE.
+
+<img width="441" height="619" alt="image" src="https://github.com/user-attachments/assets/3afc2032-996e-4af9-932e-34ba27510b79" />
 
 ---
 
